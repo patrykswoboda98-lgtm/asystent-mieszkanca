@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Asystent Mieszkańca – DEMO</title>
+  <style>
+    :root { --bg:#0b1020; --card:#111935; --muted:#93a4c7; --text:#e9efff; --accent:#4f7cff; --danger:#ff4f6d; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background: radial-gradient(1200px 800px at 20% 10%, #1a2550 0%, var(--bg) 50%); color:var(--text); }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 24px; }
+    .top { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+    .brand { display:flex; flex-direction:column; gap:4px; }
+    .brand h1 { margin:0; font-size:20px; letter-spacing:.2px; }
+    .brand p { margin:0; color:var(--muted); font-size:13px; }
+    .pill { font-size:12px; padding:6px 10px; border:1px solid rgba(255,255,255,.12); border-radius:999px; color:var(--muted); }
+    .card { background: rgba(17,25,53,.7); border:1px solid rgba(255,255,255,.10); border-radius:18px; box-shadow: 0 12px 40px rgba(0,0,0,.35); overflow:hidden; }
+    .gate { padding:24px; display:grid; gap:14px; }
+    .gate h2 { margin:0; font-size:18px; }
+    .gate p { margin:0; color:var(--muted); font-size:13px; line-height:1.5; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; }
+    input, button, textarea { font: inherit; }
+    .input { flex:1; min-width: 220px; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); color:var(--text); outline:none; }
+    .btn { padding:12px 14px; border-radius:12px; border:0; background: var(--accent); color:white; cursor:pointer; font-weight:600; }
+    .btn.secondary { background: rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.14); color:var(--text); }
+    .btn:disabled { opacity:.55; cursor:not-allowed; }
+    .err { color: #ffd2da; background: rgba(255,79,109,.12); border:1px solid rgba(255,79,109,.35); padding:10px 12px; border-radius:12px; font-size:13px; display:none; }
+    .chat { display:none; height: 72vh; min-height:520px; }
+    .chatHead { padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.10); display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .chatHead .meta { display:flex; flex-direction:column; gap:2px; }
+    .chatHead .meta strong { font-size:14px; }
+    .chatHead .meta span { font-size:12px; color:var(--muted); }
+    .msgs { padding:16px; overflow:auto; height: calc(72vh - 140px); }
+    .msg { max-width: 78%; padding:12px 12px; border-radius:14px; margin: 10px 0; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; }
+    .msg.user { margin-left:auto; background: rgba(79,124,255,.20); border:1px solid rgba(79,124,255,.35); }
+    .msg.bot { margin-right:auto; background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); }
+    .composer { padding:12px; border-top:1px solid rgba(255,255,255,.10); display:flex; gap:10px; align-items:flex-end; }
+    .ta { flex:1; min-height:44px; max-height:160px; resize:vertical; padding:12px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.18); color:var(--text); outline:none; }
+    .small { font-size:12px; color:var(--muted); padding: 0 16px 14px; }
+    .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; padding: 2px 6px; border: 1px solid rgba(255,255,255,.18); border-radius: 8px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <h1>Asystent Mieszkańca — DEMO</h1>
+        <p>Wersja demonstracyjna (dostęp na hasło)</p>
+      </div>
+      <div class="pill" id="statusPill">Status: <span id="statusTxt">offline</span></div>
+    </div>
+
+    <div class="card">
+      <!-- GATE -->
+      <div class="gate" id="gate">
+        <h2>🔒 Wpisz hasło, aby uruchomić demo</h2>
+        <p>To jest wersja demonstracyjna. Po poprawnym haśle zobaczysz czat i będziesz mógł pisać jak tutaj w rozmowie.</p>
+
+        <div class="err" id="gateErr"></div>
+
+        <div class="row">
+          <input class="input" id="pass" type="password" placeholder="Hasło demo..." autocomplete="current-password" />
+          <button class="btn" id="unlockBtn">Odblokuj</button>
+        </div>
+
+        <div class="row">
+          <button class="btn secondary" id="clearBtn" title="Czyści zapisane rzeczy w przeglądarce">Wyczyść zapis (local)</button>
+        </div>
+        <p style="margin-top:4px;color:var(--muted);font-size:12px;">
+          Tip: możesz wkleić hasło i nacisnąć <span class="kbd">Enter</span>
+        </p>
+      </div>
+
+      <!-- CHAT -->
+      <div class="chat" id="chat">
+        <div class="chatHead">
+          <div class="meta">
+            <strong>Asystent Mieszkańca</strong>
+            <span>Odpowiadam po polsku • krok po kroku • demo</span>
+          </div>
+          <div class="row">
+            <button class="btn secondary" id="newChatBtn">Nowa rozmowa</button>
+            <button class="btn secondary" id="lockBtn">Zablokuj</button>
+          </div>
+        </div>
+
+        <div class="msgs" id="msgs"></div>
+
+        <div class="composer">
+          <textarea class="ta" id="input" placeholder="Napisz wiadomość..." ></textarea>
+          <button class="btn" id="sendBtn">Wyślij</button>
+        </div>
+        <div class="small">
+          Enter = wyślij • Shift+Enter = nowa linia
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ======== USTAWIENIA (ZMIENIASZ TYLKO TE 2 LINIE) ========
+    const WEBHOOK_URL = "https://hook.eu1.make.com/1hn6b8ioluvk4f5ayigl4rrewzq8axor";
+    const DEMO_PASSWORD = "gmina2026";
+    // =========================================================
+
+    const LS_KEY = "am_demo_authed";
+    const LS_CHAT = "am_demo_chat";
+
+    const el = (id)=>document.getElementById(id);
+    const gate = el("gate");
+    const chat = el("chat");
+    const pass = el("pass");
+    const unlockBtn = el("unlockBtn");
+    const gateErr = el("gateErr");
+    const msgs = el("msgs");
+    const input = el("input");
+    const sendBtn = el("sendBtn");
+    const lockBtn = el("lockBtn");
+    const newChatBtn = el("newChatBtn");
+    const clearBtn = el("clearBtn");
+    const statusTxt = el("statusTxt");
+
+    function setStatus(txt){ statusTxt.textContent = txt; }
+
+    function showGateError(text){
+      gateErr.style.display = "block";
+      gateErr.textContent = text;
+    }
+    function hideGateError(){
+      gateErr.style.display = "none";
+      gateErr.textContent = "";
+    }
+
+    function saveChat(history){
+      localStorage.setItem(LS_CHAT, JSON.stringify(history));
+    }
+    function loadChat(){
+      try { return JSON.parse(localStorage.getItem(LS_CHAT) || "[]"); }
+      catch { return []; }
+    }
+
+    function render(history){
+      msgs.innerHTML = "";
+      history.forEach(m => {
+        const div = document.createElement("div");
+        div.className = "msg " + (m.role === "user" ? "user" : "bot");
+        div.textContent = m.content;
+        msgs.appendChild(div);
+      });
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function addMsg(role, content){
+      const history = loadChat();
+      history.push({ role, content });
+      saveChat(history);
+      render(history);
+    }
+
+    function lock(){
+      localStorage.removeItem(LS_KEY);
+      gate.style.display = "grid";
+      chat.style.display = "none";
+      pass.value = "";
+      setStatus("offline");
+    }
+
+    function unlock(){
+      hideGateError();
+      if (!pass.value || pass.value !== DEMO_PASSWORD){
+        showGateError("Nieprawidłowe hasło.");
+        return;
+      }
+      localStorage.setItem(LS_KEY, "1");
+      gate.style.display = "none";
+      chat.style.display = "block";
+      setStatus("online");
+      const history = loadChat();
+      if (history.length === 0){
+        addMsg("bot", "Cześć! Jestem Asystentem Mieszkańca (DEMO). Zadaj pytanie, np. „jak się zameldować?”");
+      } else {
+        render(history);
+      }
+      input.focus();
+    }
+
+    async function send(){
+      const text = (input.value || "").trim();
+      if (!text) return;
+
+      input.value = "";
+      addMsg("user", text);
+      setStatus("wysyłam…");
+      sendBtn.disabled = true;
+
+      // opcjonalnie: “typing” placeholder
+      const typingId = "typing-" + Date.now();
+      const historyBefore = loadChat();
+      historyBefore.push({ role: "bot", content: "…" });
+      saveChat(historyBefore);
+      render(historyBefore);
+
+      try{
+        const res = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({
+            password: DEMO_PASSWORD,     // wysyłamy też do Make (możesz tam sprawdzić)
+            message: text,
+            // możesz dodać np. sessionId, source, itp.
+            source: "github-pages-demo"
+          })
+        });
+
+        const dataText = await res.text();
+        let data;
+        try { data = JSON.parse(dataText); } catch { data = { reply: dataText }; }
+
+        // usuń placeholder "…"
+        const h = loadChat();
+        if (h.length && h[h.length-1].content === "…") h.pop();
+
+        if (!res.ok){
+          h.push({ role:"bot", content: "Błąd: " + (data.reply || ("HTTP " + res.status)) });
+          saveChat(h);
+          render(h);
+          setStatus("online");
+          return;
+        }
+
+        const reply = (data.reply || data.answer || "").toString().trim() || "Nie otrzymałem odpowiedzi z Make.";
+        h.push({ role:"bot", content: reply });
+        saveChat(h);
+        render(h);
+        setStatus("online");
+      } catch(e){
+        // usuń placeholder "…"
+        const h = loadChat();
+        if (h.length && h[h.length-1].content === "…") h.pop();
+        h.push({ role:"bot", content: "Błąd połączenia z Make. Sprawdź WEBHOOK_URL i czy scenariusz jest włączony." });
+        saveChat(h);
+        render(h);
+        setStatus("offline");
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    // Events
+    unlockBtn.addEventListener("click", unlock);
+    pass.addEventListener("keydown", (e)=>{ if (e.key === "Enter") unlock(); });
+    lockBtn.addEventListener("click", lock);
+    clearBtn.addEventListener("click", ()=>{
+      localStorage.removeItem(LS_CHAT);
+      localStorage.removeItem(LS_KEY);
+      lock();
+      hideGateError();
+      alert("Wyczyszczone.");
+    });
+    newChatBtn.addEventListener("click", ()=>{
+      localStorage.removeItem(LS_CHAT);
+      addMsg("bot", "OK — nowa rozmowa. O co chcesz zapytać?");
+    });
+
+    sendBtn.addEventListener("click", send);
+    input.addEventListener("keydown", (e)=>{
+      if (e.key === "Enter" && !e.shiftKey){
+        e.preventDefault();
+        send();
+      }
+    });
+
+    // Auto unlock if remembered
+    if (localStorage.getItem(LS_KEY) === "1"){
+      gate.style.display = "none";
+      chat.style.display = "block";
+      setStatus("online");
+      const history = loadChat();
+      if (history.length === 0){
+        addMsg("bot", "Cześć! Jestem Asystentem Mieszkańca (DEMO). Zadaj pytanie, np. „jak się zameldować?”");
+      } else {
+        render(history);
+      }
+    } else {
+      setStatus("offline");
+    }
+  </script>
+</body>
+</html>
